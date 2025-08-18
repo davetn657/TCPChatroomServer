@@ -14,6 +14,7 @@ namespace TCPChatroomServer
         public TcpClient Client { get; set; }
         public NetworkStream ClientStream {  get; set; }
         public int Index { get; set; }
+        public bool IsConnected { get; set; }
 
         public ClientData(string name, TcpClient client, NetworkStream stream, int index) 
         {
@@ -21,6 +22,7 @@ namespace TCPChatroomServer
             this.Client = client;
             this.ClientStream = stream;
             this.Index = index;
+            this.IsConnected = false;
         }
 
         public void DisconnectClient()

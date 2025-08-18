@@ -32,19 +32,19 @@ namespace TCPChatroomServer
             this.Message = message;
         }
 
-        public Byte[] Serialize(string message)
+        public byte[] Serialize()
         {
-            string jsonSerializer = JsonSerializer.Serialize(message);
-            Byte[] messageSerialized = Encoding.UTF8.GetBytes(jsonSerializer);
+            string jsonSerializer = JsonSerializer.Serialize(this);
+            byte[] messageSerialized = Encoding.UTF8.GetBytes(jsonSerializer);
             return messageSerialized;
         }
 
-        public MessageData Deserialize(Byte[] serializedMessage)
+        public MessageData Deserialize(byte[] data, Int32 bytes)
         {
             try
             {
-                string messageDeserialized = Encoding.UTF8.GetString(serializedMessage);
-                MessageData jsonDeserializer = JsonSerializer.Deserialize<MessageData>(messageDeserialized);
+                string byteDeserializer = Encoding.UTF8.GetString(data, 0, bytes);
+                MessageData jsonDeserializer = JsonSerializer.Deserialize<MessageData>(byteDeserializer);
                 return jsonDeserializer;
             }
             catch (NullReferenceException e)
