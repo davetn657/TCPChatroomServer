@@ -22,5 +22,7 @@ namespace TCPChatroomServer
             this.ClientStream = stream;
             this.IsConnected = false;
         }
+
+        public ClientData(string name) { this.Name = name; }
     }
 }

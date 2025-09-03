@@ -25,7 +25,7 @@ namespace TCPChatroomServer
             this.Message = string.Empty;
         }
 
-        public MessageData(string from, string ID, string message)
+        public MessageData(string from, string message)
         {
             this.From = from;
             this.ID = ID;

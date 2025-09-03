@@ -14,8 +14,7 @@ namespace TCPChatroomServer
     internal class Server
     {
         //SERVER IDENTIFICATION
-        private string ServerName = "Server";
-        private string ServerId = "01210";
+        private ClientData serverData = new ClientData("Server");
 
         //SERVER CREATION
         public IPAddress Host { get; }
@@ -24,6 +23,7 @@ namespace TCPChatroomServer
         private NetworkStream Stream;
         private int MinPortVal = 40000;
         private int MaxPortVal = 45000;
+        
 
         //ACCEPTED CLIENT VARIABLES
         private int MaxCapacity = 10;
@@ -85,7 +85,7 @@ namespace TCPChatroomServer
                     {
                         //if amount of clients connected exceeds capacity send a message back to client notifying that the chatroom is at max capacity
                         outgoingData = "Server at Capacity";
-                        SendMessageToSpecific(clientData, outgoingData);
+                        SendMessageToSpecific(serverData, clientData, outgoingData);
 
                         Stream.Close();
 
@@ -113,7 +113,7 @@ namespace TCPChatroomServer
                             if (nameTaken)
                             {
                                 //wait for the users to input a different username
-                                SendMessageToSpecific(clientData, outgoingData);
+                                SendMessageToSpecific(serverData, clientData, outgoingData);
                                 incomingData = RecieveMessage(clientData);
                                 continue;
                             }
@@ -131,7 +131,7 @@ namespace TCPChatroomServer
                         //add newclientdata to connectedClients
                         //increment numConnectedClients by one
 
-                        SendMessageToSpecific(clientData, NumConnectedClients.ToString());
+                        SendMessageToSpecific(serverData, clientData, NumConnectedClients.ToString());
                         clientData.Name = incomingData;
                         clientData.IsConnected = true;
                         ConnectedClients[NumConnectedClients] = clientData;
@@ -148,15 +148,13 @@ namespace TCPChatroomServer
         }
 
         //CLIENT DISCONNECTION
-        public void DisconnectClient(string username)
+        public async Task DisconnectClient(string username)
         {
             ClientData user = FindUser(username);
             if (user != null)
             {
                 user.IsConnected = false;
-                SendMessageToSpecific(user, "Disconnected");
-
-                //have a buffer here to allow the message to send
+                await Task.Run(() => SendMessageToSpecific(serverData, user, "Disconnected"));
 
                 user.ClientStream.Close();
                 user.Client.Close();
@@ -214,7 +212,7 @@ namespace TCPChatroomServer
                     break;
                 }
 
-                await SendMessageToAll(recievedMessage);
+                await SendMessageToAll(user, recievedMessage);
             }
         }
 
@@ -229,19 +227,19 @@ namespace TCPChatroomServer
             return message.Message;
         }
 
-        private void SendMessageToSpecific(ClientData user, string message)
+        async Task SendMessageToSpecific(ClientData fromuser, ClientData user, string message)
         {
-            MessageData data = new MessageData(ServerName, ServerId, message);
+            MessageData data = new MessageData(fromuser.Name, message);
             byte[] messageToSend = data.Serialize();
 
             user.ClientStream.Write(messageToSend, 0, messageToSend.Length);
         }
 
-        private async Task SendMessageToAll(string message)
+        private async Task SendMessageToAll(ClientData fromuser, string message)
         {
             for (int i = 0; i < NumConnectedClients; i++)
             {
-                SendMessageToSpecific(ConnectedClients[i], message);
+                SendMessageToSpecific(fromuser, ConnectedClients[i], message);
             }
         }
     }
