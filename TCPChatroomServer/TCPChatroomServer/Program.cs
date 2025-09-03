@@ -2,7 +2,9 @@
 using System.Net.Sockets;
 using TCPChatroomServer;
 
-IPAddress host;
+IPAddress _host;
+string _helpMessage = "hello";
+
 
 /*
  * USER INPUT
@@ -11,7 +13,7 @@ IPAddress host;
 while (true)
 {
     Console.WriteLine("Enter your IP address (ex. 123.123.1.1): ");
-    bool validateIP = IPAddress.TryParse(Console.ReadLine(), out host);
+    bool validateIP = IPAddress.TryParse(Console.ReadLine(), out _host);
 
     if (validateIP)
     {
@@ -23,8 +25,12 @@ while (true)
  *  CREATING SERVER
  */
 
-Server server = new Server(host);
+Server server = new Server(_host);
 server.StartServer();
+
+Console.WriteLine($"Connecting to: HOST: {server.Host} - PORT: {server.Port}");
+
+Console.WriteLine("AWAITING CONNECTION....");
 
 string command;
 
@@ -43,13 +49,17 @@ while (true)
 
     switch (command)
     {
+        case "kick":
+            Console.WriteLine("Username to kick: ");
+            command = Console.ReadLine();
+            server.DisconnectClient(command);
+            continue;
+        case "help":
+            Console.WriteLine(_helpMessage);
+            continue;
         case "exit":
             break;
         default:
             continue;
     }
 }
-
-Console.WriteLine("BEEP BOOP");
-Console.Read();
-

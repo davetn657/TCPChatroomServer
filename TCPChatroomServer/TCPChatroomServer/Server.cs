@@ -50,8 +50,6 @@ namespace TCPChatroomServer
         {
             Listener = new TcpListener(Host, Port);
             Listener.Start();
-
-            Console.WriteLine("AWAITING CONNECTION....");
             Task.Run(() => StartClientConnection());
         }
 
@@ -150,12 +148,20 @@ namespace TCPChatroomServer
         }
 
         //CLIENT DISCONNECTION
-        public void DisconnectClient(ClientData user)
+        public void DisconnectClient(string username)
         {
-            user.IsConnected = false;
-            user.ClientStream.Close();
-            user.Client.Close();
-            RemoveUserFromList(user);
+            ClientData user = FindUser(username);
+            if (user != null)
+            {
+                user.IsConnected = false;
+                SendMessageToSpecific(user, "Disconnected");
+
+                //have a buffer here to allow the message to send
+
+                user.ClientStream.Close();
+                user.Client.Close();
+                RemoveUserFromList(user);
+            }
         }
 
         private void RemoveUserFromList(ClientData user)
@@ -175,6 +181,19 @@ namespace TCPChatroomServer
             }
         }
 
+        private ClientData FindUser(string username)
+        {
+            for(int i = 0; i < NumConnectedClients; i++)
+            {
+                if (ConnectedClients[i].Name == username)
+                {
+                    return ConnectedClients[i];
+                }
+            }
+
+            return null;
+        }
+
         //MESSAGES
         private async Task WaitUserMessage(ClientData user)
         {
@@ -191,7 +210,7 @@ namespace TCPChatroomServer
 
                 if (recievedMessage == disconnectMessage)
                 {
-                    DisconnectClient(user);
+                    DisconnectClient(user.Name);
                     break;
                 }
 
