@@ -36,7 +36,6 @@ string command;
 
 while (true)
 {
-    Console.WriteLine("COMMAND: ");
     command = Console.ReadLine().ToLower();
 
     /*

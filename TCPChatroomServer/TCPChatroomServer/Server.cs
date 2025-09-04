@@ -33,7 +33,7 @@ namespace TCPChatroomServer
         public Server(IPAddress host)
         {
             this.Host = host;
-            this.Port = GeneratedPort();
+            this.Port = 41015;
             this.ConnectedClients = new ClientData[MaxCapacity];
         }
 
@@ -130,15 +130,15 @@ namespace TCPChatroomServer
                         //edit clientData using (ClientName, client, stream, numConnectedClients)
                         //add newclientdata to connectedClients
                         //increment numConnectedClients by one
-
+                        Console.WriteLine($"{incomingData} Connected");
                         SendMessageToSpecific(serverData, clientData, NumConnectedClients.ToString());
                         clientData.Name = incomingData;
                         clientData.IsConnected = true;
                         ConnectedClients[NumConnectedClients] = clientData;
                         NumConnectedClients++;
-                    }
 
-                    Task.Run(() => WaitUserMessage(clientData));
+                        await WaitUserMessage(clientData);
+                    }
                 }
                 catch (Exception e)
                 {
@@ -154,11 +154,12 @@ namespace TCPChatroomServer
             if (user != null)
             {
                 user.IsConnected = false;
-                await Task.Run(() => SendMessageToSpecific(serverData, user, "Disconnected"));
 
-                user.ClientStream.Close();
-                user.Client.Close();
+                SendMessageToSpecific(serverData, user, "Disconnected");
+
                 RemoveUserFromList(user);
+
+                Console.WriteLine($"{username} Disconnected");
             }
         }
 
@@ -206,6 +207,9 @@ namespace TCPChatroomServer
 
                 string recievedMessage = RecieveMessage(user);
 
+                Console.WriteLine(recievedMessage + "HELLO");
+
+
                 if (recievedMessage == disconnectMessage)
                 {
                     DisconnectClient(user.Name);
@@ -227,7 +231,7 @@ namespace TCPChatroomServer
             return message.Message;
         }
 
-        async Task SendMessageToSpecific(ClientData fromuser, ClientData user, string message)
+        private async Task SendMessageToSpecific(ClientData fromuser, ClientData user, string message)
         {
             MessageData data = new MessageData(fromuser.Name, message);
             byte[] messageToSend = data.Serialize();
