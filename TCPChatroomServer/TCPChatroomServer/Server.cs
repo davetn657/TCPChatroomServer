@@ -25,7 +25,7 @@ namespace TCPChatroomServer
         public Server(IPAddress host)
         {
             this.Host = host;
-            this.Port = 41015;
+            this.Port = GeneratedPort();
             this.ConnectedClients = new ClientData[MaxCapacity];
         }
 
@@ -198,8 +198,6 @@ namespace TCPChatroomServer
                 }
 
                 string recievedMessage = RecieveMessage(user);
-
-                Console.WriteLine(recievedMessage + "HELLO");
 
 
                 if (recievedMessage == disconnectMessage)
