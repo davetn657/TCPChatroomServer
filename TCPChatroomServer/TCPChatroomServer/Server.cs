@@ -149,6 +149,8 @@ namespace TCPChatroomServer
 
                 SendMessageToSpecific(serverData, user, "Disconnected");
 
+                user.ClientStream.Close();
+                user.Client.Close();
                 RemoveUserFromList(user);
 
                 Console.WriteLine($"{username} Disconnected");
