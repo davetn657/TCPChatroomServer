@@ -11,20 +11,17 @@ namespace TCPChatroomServer
         //  ID: The ID of who the message is from (this will be null on the first sent message)
         //  MESSAGE: the contents of what the user sent
         public string From {  get; set; }
-        public string ID { get; set; }
         public string Message { get; set; }
 
         public MessageData()
         {
             this.From = string.Empty;
-            this.ID = string.Empty;
             this.Message = string.Empty;
         }
 
         public MessageData(string from, string message)
         {
             this.From = from;
-            this.ID = ID;
             this.Message = message;
         }
 
