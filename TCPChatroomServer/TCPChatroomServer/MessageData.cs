@@ -50,6 +50,5 @@ namespace TCPChatroomServer
                 return new MessageData();
             }
         }
-
     }
 }
