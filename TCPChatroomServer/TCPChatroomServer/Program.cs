@@ -2,7 +2,13 @@
 using TCPChatroomServer;
 
 IPAddress _host;
-string _helpMessage = "hello";
+string _helpMessage = 
+    """
+    Note - All commands are not case sensitive!
+
+    KICK - Prompts a username which will be kicked from the server
+    EXIT - Stops the server and exits the application
+    """;
 
 
 /*
@@ -31,6 +37,8 @@ Console.WriteLine($"Connecting to: HOST: {server.Host} - PORT: {server.Port}");
 
 Console.WriteLine("AWAITING CONNECTION....");
 
+Console.WriteLine("Type 'help' to see all server commands");
+
 string command;
 
 while (true)
@@ -58,6 +66,7 @@ while (true)
         case "exit":
             break;
         default:
+            Console.WriteLine("Type 'help' to see all server commands");
             continue;
     }
 }
