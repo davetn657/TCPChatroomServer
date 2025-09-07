@@ -37,12 +37,11 @@ Console.WriteLine($"Connecting to: HOST: {server.Host} - PORT: {server.Port}");
 
 Console.WriteLine("AWAITING CONNECTION....");
 
-Console.WriteLine("Type 'help' to see all server commands");
-
 string command;
 
 while (true)
 {
+    Console.WriteLine("Type 'help' to see all server commands");
     command = Console.ReadLine().ToLower();
 
     /*
@@ -58,7 +57,7 @@ while (true)
         case "kick":
             Console.WriteLine("Username to kick: ");
             command = Console.ReadLine();
-            server.DisconnectClient(command);
+            await server.Disconnect(command);
             continue;
         case "help":
             Console.WriteLine(_helpMessage);
@@ -66,7 +65,6 @@ while (true)
         case "exit":
             break;
         default:
-            Console.WriteLine("Type 'help' to see all server commands");
             continue;
     }
 }

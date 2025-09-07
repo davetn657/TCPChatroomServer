@@ -1,4 +1,5 @@
-﻿using System.Net.Sockets;
+﻿using System.Diagnostics;
+using System.Net.Sockets;
 
 namespace TCPChatroomServer
 {
@@ -23,5 +24,23 @@ namespace TCPChatroomServer
         }
 
         public ClientData(string name) { this.Name = name; }
+
+        //CLIENT DISCONNECTION
+        public async Task DisconnectClient()
+        {
+            try
+            {
+                this.MessageHandler.StopWaitUserMessage();
+
+                this.ClientStream?.Close();
+                this.Client?.Close();
+
+                Console.WriteLine($"{Name} Disconnected");
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Error {ex.Message} \nUnexpected Disconnection");
+            }
+        }
     }
 }

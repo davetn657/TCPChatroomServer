@@ -1,4 +1,5 @@
-﻿using System.Net;
+﻿using System.Diagnostics;
+using System.Net;
 using System.Net.Sockets;
 
 namespace TCPChatroomServer
@@ -16,17 +17,6 @@ namespace TCPChatroomServer
         private TcpListener Listener;
         private const int MinPortVal = 40000;
         private const int MaxPortVal = 45000;
-
-        //Message Identification
-        public readonly string ServerCommand = "SERVERCOMMAND";
-        public readonly string ServerMessage = "SERVERMESSAGE";
-        public readonly string UserMessage = "USERMESSAGE";
-
-        public readonly string DisconnectMessage = "DISCONNECT";
-        public readonly string NameTakenMessage = "NAME TAKEN";
-        public readonly string UserConnectedMessage = "CONNECTED";
-        public readonly string ServerCapacityMessage = "SERVER AT CAPACITY";
-        public readonly string MessageFailedMessage = "MESSAGE FAILED TO SEND";
 
         //ACCEPTED CLIENT VARIABLES
         public int MaxCapacity = 10;
@@ -65,14 +55,14 @@ namespace TCPChatroomServer
 
                 foreach (var client in ConnectedClients) 
                 {
-                    await DisconnectClient(client.Name);
+                    await client.DisconnectClient();
                 }
 
                 Listener.Stop();
             }
             catch
             {
-                Console.WriteLine("Error occured when stopping server");
+                Debug.WriteLine("Error occured when stopping server");
             }
         }
 
@@ -88,14 +78,14 @@ namespace TCPChatroomServer
                     TcpClient client = await Listener.AcceptTcpClientAsync();
                     NetworkStream stream = client.GetStream();
 
-                    MessageHandler messageHandler = new MessageHandler(this);
+                    MessageHandler messageHandler = new MessageHandler(serverData);
                     ClientData clientData = new ClientData("Temp", client, stream, messageHandler);
-                    MessageData outgoingMessage = new MessageData(ServerCommand, serverData, string.Empty);
+                    MessageData outgoingMessage = new MessageData(messageHandler.ServerCommand, serverData, string.Empty);
 
                     if (ConnectedClients.Count >= MaxCapacity)
                     {
                         //if amount of clients connected exceeds capacity send a message back to client notifying that the chatroom is at max capacity then remove them from the stream
-                        outgoingMessage.Message = ServerCapacityMessage;
+                        outgoingMessage.Message = messageHandler.ServerCapacityMessage;
                         await clientData.MessageHandler.SendMessageToSpecific(clientData, outgoingMessage);
 
                         stream.Close();
@@ -116,7 +106,7 @@ namespace TCPChatroomServer
                             {
                                 if (ConnectedClients[i].Name == incomingData.From.Name)
                                 {
-                                    outgoingMessage.Message = NameTakenMessage;
+                                    outgoingMessage.Message = messageHandler.NameTakenMessage;
                                     nameTaken = true;
 
                                     break;
@@ -131,8 +121,8 @@ namespace TCPChatroomServer
                             }
                             else
                             {
-                                outgoingMessage.Message = UserConnectedMessage + $":{incomingData}";
-                                await clientData.MessageHandler.SendMessageToAll(outgoingMessage);
+                                outgoingMessage.Message = messageHandler.UserConnectedMessage + $":{incomingData}";
+                                await clientData.MessageHandler.SendMessageToAll(outgoingMessage, ConnectedClients);
                                 break;
                             }
 
@@ -152,45 +142,30 @@ namespace TCPChatroomServer
 
                         ConnectedClients.Add(clientData);
 
-                        await clientData.MessageHandler.WaitUserMessage(clientData);
+                        await clientData.MessageHandler.WaitUserMessage(clientData, ConnectedClients);
                     }
                 }
                 catch (Exception e)
                 {
-                    Console.WriteLine($"Error:{e.Message} \nCould not connect to user");
+                    Debug.WriteLine($"Error:{e.Message} \nCould not connect to user");
                 }
             }
         }
 
-        //CLIENT DISCONNECTION
-        public async Task DisconnectClient(string username)
+        public async Task Disconnect(string userName)
         {
-            ClientData user = ConnectedClients.Find(e => e.Name == username);
+            ClientData user = ConnectedClients.Find(e => e.Name == userName);
 
             if (user != null)
             {
-                try
-                {
-                    user.MessageHandler.StopWaitUserMessage();
-
-                    ConnectedClients.Remove(user);
-
-                    user.ClientStream?.Close();
-                    user.Client?.Close();
-
-                    Console.WriteLine($"{username} Disconnected");
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"Error {ex.Message} \nUnexpected Disconnection");
-                }
+                await user.DisconnectClient();
+                ConnectedClients.Remove(user);
             }
             else
             {
-                Console.WriteLine("User Not Found");
+                Debug.WriteLine($"Could not find user {userName}");
             }
         }
-
         private string AllUsers()
         {
             string connectedClientsString = string.Empty;

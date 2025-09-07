@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -8,17 +9,28 @@ namespace TCPChatroomServer
 {
     internal class MessageHandler
     {
-        private Server ServerConnection;
+        private ClientData ServerData;
         private CancellationTokenSource CancelTokenSource;
 
+        //Message Identification
+        public readonly string ServerCommand = "SERVERCOMMAND";
+        public readonly string ServerMessage = "SERVERMESSAGE";
+        public readonly string UserMessage = "USERMESSAGE";
 
-        public MessageHandler(Server server) 
+        public readonly string DisconnectMessage = "DISCONNECT";
+        public readonly string NameTakenMessage = "NAME TAKEN";
+        public readonly string UserConnectedMessage = "CONNECTED";
+        public readonly string ServerCapacityMessage = "SERVER AT CAPACITY";
+        public readonly string MessageFailedMessage = "MESSAGE FAILED TO SEND";
+
+
+        public MessageHandler(ClientData serverData) 
         {
-            this.ServerConnection = server;
+            this.ServerData = serverData;
         }
 
         //MESSAGES
-        public async Task WaitUserMessage(ClientData user)
+        public async Task WaitUserMessage(ClientData user, List<ClientData> connectedClients)
         {
             CancelTokenSource = new CancellationTokenSource();
 
@@ -31,22 +43,22 @@ namespace TCPChatroomServer
 
                     if (receivedMessage == null)
                     {
-                        MessageData message = new MessageData(ServerConnection.ServerMessage, ServerConnection.serverData, ServerConnection.MessageFailedMessage);
+                        MessageData message = new MessageData(ServerMessage, ServerData, MessageFailedMessage);
                         await SendMessageToSpecific(user, message);
                     }
-                    else if (receivedMessage.MessageType == ServerConnection.ServerCommand && receivedMessage.Message == ServerConnection.DisconnectMessage)
+                    else if (receivedMessage.MessageType == ServerCommand && receivedMessage.Message == DisconnectMessage)
                     {
-                        await ServerConnection.DisconnectClient(user.Name);
+                        await user.DisconnectClient();
                         break;
                     }
-                    else if (receivedMessage.MessageType == ServerConnection.UserMessage)
+                    else if (receivedMessage.MessageType == UserMessage)
                     {
-                        await SendMessageToAll(receivedMessage);
+                        await SendMessageToAll(receivedMessage, connectedClients);
                     }
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"Error: {ex.Message}");
+                    Debug.WriteLine($"Error: {ex.Message}");
                 }
             }
         }
@@ -65,8 +77,8 @@ namespace TCPChatroomServer
             }
             catch (IOException ex) 
             {
-                Console.WriteLine($"Error: {ex.Message} \n");
-                await ServerConnection.DisconnectClient(user.Name);
+                Debug.WriteLine($"Error: {ex.Message} \n");
+                await user.DisconnectClient();
                 return null;
             }
         }
@@ -79,18 +91,18 @@ namespace TCPChatroomServer
             await user.ClientStream.WriteAsync(messageToSend, 0, messageToSend.Length);
         }
 
-        public async Task SendMessageToAll(MessageData message)
+        public async Task SendMessageToAll(MessageData message, List<ClientData> connectedClients)
         {
             try
             {
-                foreach (ClientData client in ServerConnection.ConnectedClients)
+                foreach (ClientData client in connectedClients)
                 {
                     await SendMessageToSpecific(client, message);
                 }
             }
             catch (InvalidOperationException ex) 
             {
-                Console.WriteLine($"Error {ex.Message} \nFailed to send to all users");
+                Debug.WriteLine($"Error {ex.Message} \nFailed to send to all users");
             }
         }
 
