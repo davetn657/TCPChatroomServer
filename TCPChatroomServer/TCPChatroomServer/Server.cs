@@ -19,14 +19,13 @@ namespace TCPChatroomServer
         private int MaxPortVal = 45000;
 
         //Message Identification
-        private string ServerCommand = "SERVERCOMMAND";
-        private string UserCommand = "USERCOMMAND";
-        private string UserMessage = "USERMESSAGE";
+        public const string ServerCommand = "SERVERCOMMAND:";
+        public const string UserMessage = "USERMESSAGE:";
 
-        private string DisconnectMessage = "DISCONNECT";
-        private string NameTakenMessage = "NAMETAKEN";
-        private string UserConnectedMessage = "CONNECTED";
-        private string ServerCapacityMessage = "SERVERATCAPACITY";
+        public const string DisconnectMessage = "DISCONNECT";
+        public const string NameTakenMessage = "NAMETAKEN";
+        public const string UserConnectedMessage = "CONNECTED";
+        public const string ServerCapacityMessage = "SERVERATCAPACITY";
 
         //ACCEPTED CLIENT VARIABLES
         private int MaxCapacity = 10;
@@ -88,7 +87,7 @@ namespace TCPChatroomServer
                     {
                         //if amount of clients connected exceeds capacity send a message back to client notifying that the chatroom is at max capacity then remove them from the stream
                         outgoingMessage.Message = ServerCapacityMessage;
-                        SendMessageToSpecific(serverData, clientData, outgoingMessage);
+                        SendMessageToSpecific(clientData, outgoingMessage);
 
                         Stream.Close();
                         client.Close();
@@ -116,13 +115,13 @@ namespace TCPChatroomServer
                             if (nameTaken)
                             {
                                 //wait for the users to input a different username
-                                SendMessageToSpecific(serverData, clientData, outgoingMessage);
+                                SendMessageToSpecific(clientData, outgoingMessage);
                                 continue;
                             }
                             else
                             {
                                 outgoingMessage.Message = UserConnectedMessage + $":{incomingData}";
-                                SendMessageToAll(serverData, outgoingMessage);
+                                SendMessageToAll(outgoingMessage);
                                 break;
                             }
 
@@ -136,10 +135,9 @@ namespace TCPChatroomServer
                         //increment numConnectedClients by one
                         Console.WriteLine($"{incomingData} Connected");
                         clientData.Name = incomingData;
-                        clientData.IsConnected = true;
 
                         outgoingMessage.Message = AllUsers();
-                        SendMessageToSpecific(serverData, clientData, outgoingMessage);
+                        SendMessageToSpecific(clientData, outgoingMessage);
 
                         ConnectedClients[NumConnectedClients] = clientData;
                         NumConnectedClients++;
@@ -158,16 +156,12 @@ namespace TCPChatroomServer
         public async Task DisconnectClient(string username)
         {
             ClientData user = FindUser(username);
+
             if (user != null)
             {
-                user.IsConnected = false;
-
                 MessageData message = new MessageData(ServerCommand, serverData, DisconnectMessage);
+                SendMessageToSpecific(user, message);
 
-                SendMessageToSpecific(serverData, user, message);
-
-                user.ClientStream.Close();
-                user.Client.Close();
                 RemoveUserFromList(user);
 
                 Console.WriteLine($"{username} Disconnected");
@@ -219,25 +213,22 @@ namespace TCPChatroomServer
         //MESSAGES
         private async Task WaitUserMessage(ClientData user)
         {
-            string disconnectMessage = DisconnectMessage + $":{user.Name}";
 
             while (true)
             {
-                if (user.IsConnected == false)
-                {
-                    break;
-                }
-
                 MessageData recievedMessage = RecieveMessage(user);
 
-
-                if (recievedMessage.Message == disconnectMessage)
+                if (recievedMessage.MessageType == ServerCommand && recievedMessage.Message == DisconnectMessage)
                 {
                     DisconnectClient(user.Name);
+                    user.ClientStream.Close();
+                    user.Client.Close();
                     break;
                 }
-
-                await SendMessageToAll(user, recievedMessage);
+                else if (recievedMessage.MessageType == UserMessage)
+                {
+                    SendMessageToAll(recievedMessage);
+                }
             }
         }
 
@@ -252,7 +243,7 @@ namespace TCPChatroomServer
             return message;
         }
 
-        private async Task SendMessageToSpecific(ClientData fromuser, ClientData user, MessageData message)
+        private async Task SendMessageToSpecific(ClientData user, MessageData message)
         {
             MessageData data = message;
             byte[] messageToSend = data.Serialize();
@@ -260,12 +251,13 @@ namespace TCPChatroomServer
             user.ClientStream.Write(messageToSend, 0, messageToSend.Length);
         }
 
-        private async Task SendMessageToAll(ClientData fromuser, MessageData message)
+        private async Task SendMessageToAll(MessageData message)
         {
             for (int i = 0; i < NumConnectedClients; i++)
             {
-                SendMessageToSpecific(fromuser, ConnectedClients[i], message);
+                SendMessageToSpecific(message.From, message);
             }
         }
+
     }
 }

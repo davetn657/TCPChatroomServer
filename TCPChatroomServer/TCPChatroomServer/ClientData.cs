@@ -7,7 +7,6 @@ namespace TCPChatroomServer
         public string Name { get; set; }
         public TcpClient Client { get; set; }
         public NetworkStream ClientStream {  get; set; }
-        public bool IsConnected { get; set; }
 
         public ClientData()
         {
@@ -19,7 +18,6 @@ namespace TCPChatroomServer
             this.Name = name;
             this.Client = client;
             this.ClientStream = stream;
-            this.IsConnected = false;
         }
 
         public ClientData(string name) { this.Name = name; }
