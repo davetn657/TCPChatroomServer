@@ -9,6 +9,11 @@ namespace TCPChatroomServer
         public NetworkStream ClientStream {  get; set; }
         public bool IsConnected { get; set; }
 
+        public ClientData()
+        {
+            this.Name = string.Empty;
+        }
+
         public ClientData(string name, TcpClient client, NetworkStream stream, int index) 
         {
             this.Name = name;
