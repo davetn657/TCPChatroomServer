@@ -8,9 +8,6 @@ namespace TCPChatroomServer
     {
         private CancellationTokenSource CancelTokenSource;
 
-        //SERVER IDENTIFICATION
-        public readonly ClientData serverData = new ClientData("Server");
-
         //SERVER CREATION
         public IPAddress Host { get; }
         public int Port { get; }
@@ -78,9 +75,9 @@ namespace TCPChatroomServer
                     TcpClient client = await Listener.AcceptTcpClientAsync();
                     NetworkStream stream = client.GetStream();
 
-                    MessageHandler messageHandler = new MessageHandler(serverData);
+                    MessageHandler messageHandler = new MessageHandler();
                     ClientData clientData = new ClientData("Temp", client, stream, messageHandler);
-                    MessageData outgoingMessage = new MessageData(messageHandler.ServerCommand, serverData, string.Empty);
+                    MessageData outgoingMessage = new MessageData(messageHandler.ServerCommand, messageHandler.ServerData, string.Empty);
 
                     if (ConnectedClients.Count >= MaxCapacity)
                     {

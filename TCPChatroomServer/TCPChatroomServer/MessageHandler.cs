@@ -9,8 +9,9 @@ namespace TCPChatroomServer
 {
     internal class MessageHandler
     {
-        private ClientData ServerData;
+        public ClientData ServerData;
         private CancellationTokenSource CancelTokenSource;
+        private CancellationToken CancelToken;
 
         //Message Identification
         public readonly string ServerCommand = "SERVERCOMMAND";
@@ -24,17 +25,16 @@ namespace TCPChatroomServer
         public readonly string MessageFailedMessage = "MESSAGE FAILED TO SEND";
 
 
-        public MessageHandler(ClientData serverData) 
+        public MessageHandler() 
         {
-            this.ServerData = serverData;
+            this.ServerData = new ClientData("Server");
+            CancelTokenSource = new CancellationTokenSource();
+            CancelToken = CancelTokenSource.Token;
         }
 
         //MESSAGES
         public async Task WaitUserMessage(ClientData user, List<ClientData> connectedClients)
         {
-            CancelTokenSource = new CancellationTokenSource();
-
-            
             while (!CancelTokenSource.IsCancellationRequested)
             {
                 try
@@ -68,7 +68,7 @@ namespace TCPChatroomServer
             try
             {
                 byte[] data = new byte[1024];
-                Int32 bytes = await user.ClientStream.ReadAsync(data, 0, data.Length);
+                Int32 bytes = await user.ClientStream.ReadAsync(data, 0, data.Length, CancelToken);
                 MessageData message = new MessageData();
 
                 message = message.Deserialize(data, bytes);
