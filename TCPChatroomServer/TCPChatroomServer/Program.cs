@@ -57,7 +57,7 @@ while (true)
         case "kick":
             Console.WriteLine("Username to kick: ");
             command = Console.ReadLine();
-            await server.Disconnect(command);
+            server.Disconnect(command);
             continue;
         case "help":
             Console.WriteLine(_helpMessage);

@@ -19,13 +19,14 @@ namespace TCPChatroomServer
         {
             this.From = new ClientData();
             this.Message = string.Empty;
+            this.MessageType = string.Empty;
         }
 
         public MessageData(string messageType, ClientData from, string message)
         {
-            this.MessageType = messageType;
             this.From = from;
             this.Message = message;
+            this.MessageType = messageType;
         }
 
         public byte[] Serialize()

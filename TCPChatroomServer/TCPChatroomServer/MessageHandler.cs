@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.VisualBasic;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -9,51 +10,46 @@ namespace TCPChatroomServer
 {
     internal class MessageHandler
     {
-        public ClientData ServerData;
+        private ClientData ServerData;
+        private ClientData UserData;
         private CancellationTokenSource CancelTokenSource;
         private CancellationToken CancelToken;
 
         //Message Identification
-        public readonly string ServerCommand = "SERVERCOMMAND";
-        public readonly string ServerMessage = "SERVERMESSAGE";
-        public readonly string UserMessage = "USERMESSAGE";
+        private const string ServerMessage = "SERVERMESSAGE";
+        private const string UserMessage = "USERMESSAGE";
 
-        public readonly string DisconnectMessage = "DISCONNECT";
+        public readonly string DisconnectMessage = "DISCONNECTED";
         public readonly string NameTakenMessage = "NAME TAKEN";
         public readonly string UserConnectedMessage = "CONNECTED";
         public readonly string ServerCapacityMessage = "SERVER AT CAPACITY";
         public readonly string MessageFailedMessage = "MESSAGE FAILED TO SEND";
 
 
-        public MessageHandler() 
+        public MessageHandler(ClientData userData)
         {
+            this.UserData = userData;
             this.ServerData = new ClientData("Server");
             CancelTokenSource = new CancellationTokenSource();
             CancelToken = CancelTokenSource.Token;
         }
 
         //MESSAGES
-        public async Task WaitUserMessage(ClientData user, List<ClientData> connectedClients)
+        public async Task WaitUserMessage(List<ClientData> connectedClients)
         {
             while (!CancelTokenSource.IsCancellationRequested)
             {
                 try
                 {
-                    MessageData receivedMessage = await ReceiveMessage(user);
+                    MessageData receivedMessage = await ReceiveMessage();
 
-                    if (receivedMessage == null)
-                    {
-                        MessageData message = new MessageData(ServerMessage, ServerData, MessageFailedMessage);
-                        await SendMessageToSpecific(user, message);
-                    }
-                    else if (receivedMessage.MessageType == ServerCommand && receivedMessage.Message == DisconnectMessage)
-                    {
-                        await user.DisconnectClient();
-                        break;
-                    }
-                    else if (receivedMessage.MessageType == UserMessage)
+                    if (receivedMessage.MessageType == UserMessage)
                     {
                         await SendMessageToAll(receivedMessage, connectedClients);
+                    }
+                    else
+                    {
+                        await SendServerCommand(receivedMessage.Message);
                     }
                 }
                 catch (Exception ex)
@@ -63,12 +59,12 @@ namespace TCPChatroomServer
             }
         }
 
-        public async Task<MessageData> ReceiveMessage(ClientData user)
+        public async Task<MessageData> ReceiveMessage()
         {
             try
             {
                 byte[] data = new byte[1024];
-                Int32 bytes = await user.ClientStream.ReadAsync(data, 0, data.Length, CancelToken);
+                Int32 bytes = await UserData.ClientStream.ReadAsync(data, 0, data.Length, CancelToken);
                 MessageData message = new MessageData();
 
                 message = message.Deserialize(data, bytes);
@@ -78,17 +74,17 @@ namespace TCPChatroomServer
             catch (IOException ex) 
             {
                 Debug.WriteLine($"Error: {ex.Message} \n");
-                await user.DisconnectClient();
+                UserData.DisconnectClient();
                 return null;
             }
         }
 
-        public async Task SendMessageToSpecific(ClientData user, MessageData message)
+        public async Task SendMessageToSpecific(MessageData message)
         {
             MessageData data = message;
             byte[] messageToSend = data.Serialize();
 
-            await user.ClientStream.WriteAsync(messageToSend, 0, messageToSend.Length);
+            await UserData.ClientStream.WriteAsync(messageToSend, 0, messageToSend.Length);
         }
 
         public async Task SendMessageToAll(MessageData message, List<ClientData> connectedClients)
@@ -97,12 +93,23 @@ namespace TCPChatroomServer
             {
                 foreach (ClientData client in connectedClients)
                 {
-                    await SendMessageToSpecific(client, message);
+                    await SendMessageToSpecific(message);
                 }
             }
             catch (InvalidOperationException ex) 
             {
                 Debug.WriteLine($"Error {ex.Message} \nFailed to send to all users");
+            }
+        }
+
+        public async Task SendServerCommand(string message)
+        {
+            MessageData serverMessage = new MessageData(ServerMessage, ServerData, message);
+            await SendMessageToSpecific(serverMessage);
+
+            if (message == DisconnectMessage || message == ServerCapacityMessage)
+            {
+                UserData.DisconnectClient();
             }
         }
 

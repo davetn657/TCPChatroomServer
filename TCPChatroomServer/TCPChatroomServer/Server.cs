@@ -52,7 +52,7 @@ namespace TCPChatroomServer
 
                 foreach (var client in ConnectedClients) 
                 {
-                    await client.DisconnectClient();
+                    client.DisconnectClient();
                 }
 
                 Listener.Stop();
@@ -75,15 +75,15 @@ namespace TCPChatroomServer
                     TcpClient client = await Listener.AcceptTcpClientAsync();
                     NetworkStream stream = client.GetStream();
 
-                    MessageHandler messageHandler = new MessageHandler();
-                    ClientData clientData = new ClientData("Temp", client, stream, messageHandler);
-                    MessageData outgoingMessage = new MessageData(messageHandler.ServerCommand, messageHandler.ServerData, string.Empty);
+
+                    ClientData clientData = new ClientData("Temp", client, stream);
+                    MessageHandler messageHandler = clientData.MessageHandler;
+                    MessageData outgoingMessage = new MessageData();
 
                     if (ConnectedClients.Count >= MaxCapacity)
                     {
                         //if amount of clients connected exceeds capacity send a message back to client notifying that the chatroom is at max capacity then remove them from the stream
-                        outgoingMessage.Message = messageHandler.ServerCapacityMessage;
-                        await clientData.MessageHandler.SendMessageToSpecific(clientData, outgoingMessage);
+                        await messageHandler.SendServerCommand(messageHandler.ServerCapacityMessage);
 
                         stream.Close();
                         client.Close();
@@ -96,16 +96,14 @@ namespace TCPChatroomServer
 
                         while (true)
                         {
-                            incomingData = await clientData.MessageHandler.ReceiveMessage(clientData);
+                            incomingData = await messageHandler.ReceiveMessage();
 
 
-                            for (int i = 0; i < ConnectedClients.Count; i++)
+                            foreach(ClientData c in ConnectedClients)
                             {
-                                if (ConnectedClients[i].Name == incomingData.From.Name)
+                                if (c.Name == incomingData.From.Name)
                                 {
-                                    outgoingMessage.Message = messageHandler.NameTakenMessage;
                                     nameTaken = true;
-
                                     break;
                                 }
                             }
@@ -113,13 +111,13 @@ namespace TCPChatroomServer
                             if (nameTaken)
                             {
                                 //wait for the users to input a different username
-                                await clientData.MessageHandler.SendMessageToSpecific(clientData, outgoingMessage);
+                                await messageHandler.SendServerCommand(messageHandler.NameTakenMessage);
                                 continue;
                             }
                             else
                             {
                                 outgoingMessage.Message = messageHandler.UserConnectedMessage + $":{incomingData}";
-                                await clientData.MessageHandler.SendMessageToAll(outgoingMessage, ConnectedClients);
+                                await messageHandler.SendMessageToAll(outgoingMessage, ConnectedClients);
                                 break;
                             }
 
@@ -135,11 +133,11 @@ namespace TCPChatroomServer
                         clientData.Name = incomingData.From.Name;
 
                         outgoingMessage.Message = AllUsers();
-                        await clientData.MessageHandler.SendMessageToSpecific(clientData, outgoingMessage);
+                        await messageHandler.SendMessageToSpecific(outgoingMessage);
 
                         ConnectedClients.Add(clientData);
 
-                        await clientData.MessageHandler.WaitUserMessage(clientData, ConnectedClients);
+                        await messageHandler.WaitUserMessage(ConnectedClients);
                     }
                 }
                 catch (Exception e)
@@ -149,13 +147,13 @@ namespace TCPChatroomServer
             }
         }
 
-        public async Task Disconnect(string userName)
+        public void Disconnect(string userName)
         {
             ClientData user = ConnectedClients.Find(e => e.Name == userName);
 
             if (user != null)
             {
-                await user.DisconnectClient();
+                user.DisconnectClient();
                 ConnectedClients.Remove(user);
             }
             else

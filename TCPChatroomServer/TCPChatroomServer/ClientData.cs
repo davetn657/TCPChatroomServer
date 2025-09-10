@@ -13,20 +13,29 @@ namespace TCPChatroomServer
         public ClientData()
         {
             this.Name = string.Empty;
+            this.Client = new TcpClient();
+            this.ClientStream = this.Client.GetStream();
+            this.MessageHandler = new MessageHandler(this);
         }
 
-        public ClientData(string name, TcpClient client, NetworkStream stream, MessageHandler messageHandler) 
+        public ClientData(string name, TcpClient client, NetworkStream stream) 
         {
             this.Name = name;
             this.Client = client;
             this.ClientStream = stream;
-            this.MessageHandler = messageHandler;
+            this.MessageHandler = new MessageHandler(this);
         }
 
-        public ClientData(string name) { this.Name = name; }
+        public ClientData(string name) 
+        { 
+            this.Name = name;
+            this.Client = new TcpClient();
+            this.ClientStream = this.Client.GetStream();
+            this.MessageHandler = new MessageHandler(this);
+        }
 
         //CLIENT DISCONNECTION
-        public async Task DisconnectClient()
+        public void DisconnectClient()
         {
             try
             {
