@@ -33,7 +33,7 @@ while (true)
 Server server = new Server(_host);
 server.StartServer();
 
-Console.WriteLine($"Connecting to: HOST: {server.Host} - PORT: {server.Port}");
+Console.WriteLine($"Connecting to: HOST: {server.host} - PORT: {server.port}");
 
 Console.WriteLine("AWAITING CONNECTION....");
 

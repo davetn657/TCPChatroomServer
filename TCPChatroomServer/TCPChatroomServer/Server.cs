@@ -9,11 +9,11 @@ namespace TCPChatroomServer
         private CancellationTokenSource CancelTokenSource;
 
         //SERVER CREATION
-        public IPAddress Host { get; }
-        public int Port { get; }
-        private TcpListener Listener;
-        private const int MinPortVal = 40000;
-        private const int MaxPortVal = 45000;
+        public IPAddress host { get; }
+        public int port { get; }
+        private TcpListener listener;
+        private const int minPortVal = 40000;
+        private const int maxPortVal = 45000;
 
         //ACCEPTED CLIENT VARIABLES
         public int MaxCapacity = 10;
@@ -21,15 +21,15 @@ namespace TCPChatroomServer
 
         public Server(IPAddress host)
         {
-            this.Host = host;
-            this.Port = GeneratedPort();
+            this.host = host;
+            this.port = GeneratedPort();
             this.ConnectedClients = new List<ClientData>();
         }
 
         private int GeneratedPort()
         {
             Random random = new Random();
-            int port = random.Next(MinPortVal, MaxPortVal);
+            int port = random.Next(minPortVal, maxPortVal);
             return port;
         }
 
@@ -38,8 +38,8 @@ namespace TCPChatroomServer
         public void StartServer()
         {
             CancelTokenSource = new CancellationTokenSource();
-            Listener = new TcpListener(Host, Port);
-            Listener.Start();
+            listener = new TcpListener(host, port);
+            listener.Start();
             Task.Run(() => StartClientConnectionLoop());
         }
 
@@ -55,7 +55,7 @@ namespace TCPChatroomServer
                     client.DisconnectClient();
                 }
 
-                Listener.Stop();
+                listener.Stop();
             }
             catch
             {
@@ -72,18 +72,18 @@ namespace TCPChatroomServer
                 {
                     MessageData incomingData;
 
-                    TcpClient client = await Listener.AcceptTcpClientAsync();
+                    TcpClient client = await listener.AcceptTcpClientAsync();
                     NetworkStream stream = client.GetStream();
 
 
                     ClientData clientData = new ClientData("Temp", client, stream);
-                    MessageHandler messageHandler = clientData.MessageHandler;
+                    MessageHandler messageHandler = clientData.messageHandler;
                     MessageData outgoingMessage = new MessageData();
 
                     if (ConnectedClients.Count >= MaxCapacity)
                     {
                         //if amount of clients connected exceeds capacity send a message back to client notifying that the chatroom is at max capacity then remove them from the stream
-                        await messageHandler.SendServerCommand(messageHandler.ServerCapacityMessage);
+                        await messageHandler.SendServerCommand(messageHandler.serverCapacityMessage);
 
                         stream.Close();
                         client.Close();
@@ -101,7 +101,7 @@ namespace TCPChatroomServer
 
                             foreach(ClientData c in ConnectedClients)
                             {
-                                if (c.Name == incomingData.From.Name)
+                                if (c.name == incomingData.from.name)
                                 {
                                     nameTaken = true;
                                     break;
@@ -111,12 +111,12 @@ namespace TCPChatroomServer
                             if (nameTaken)
                             {
                                 //wait for the users to input a different username
-                                await messageHandler.SendServerCommand(messageHandler.NameTakenMessage);
+                                await messageHandler.SendServerCommand(messageHandler.nameTakenMessage);
                                 continue;
                             }
                             else
                             {
-                                outgoingMessage.Message = messageHandler.UserConnectedMessage + $":{incomingData}";
+                                outgoingMessage.message = messageHandler.userConnectedMessage + $":{incomingData}";
                                 await messageHandler.SendMessageToAll(outgoingMessage, ConnectedClients);
                                 break;
                             }
@@ -129,10 +129,10 @@ namespace TCPChatroomServer
                         //edit clientData using (ClientName, client, stream, numConnectedClients)
                         //add newclientdata to connectedClients
                         //increment numConnectedClients by one
-                        Console.WriteLine($"{incomingData.From.Name} Connected");
-                        clientData.Name = incomingData.From.Name;
+                        Console.WriteLine($"{incomingData.from.name} Connected");
+                        clientData.name = incomingData.from.name;
 
-                        outgoingMessage.Message = AllUsers();
+                        outgoingMessage.message = AllUsers();
                         await messageHandler.SendMessageToSpecific(outgoingMessage);
 
                         ConnectedClients.Add(clientData);
@@ -149,7 +149,7 @@ namespace TCPChatroomServer
 
         public void Disconnect(string userName)
         {
-            ClientData user = ConnectedClients.Find(e => e.Name == userName);
+            ClientData user = ConnectedClients.Find(e => e.name == userName);
 
             if (user != null)
             {
@@ -167,7 +167,7 @@ namespace TCPChatroomServer
 
             for (int i = 0; i < ConnectedClients.Count; i++)
             {
-                connectedClientsString += ConnectedClients[i].Name + ",";
+                connectedClientsString += ConnectedClients[i].name + ",";
             }
 
             return connectedClientsString.TrimEnd(',');

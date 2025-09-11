@@ -5,33 +5,33 @@ namespace TCPChatroomServer
 {
     internal class ClientData
     {
-        public string Name { get; set; }
-        public TcpClient Client { get; set; }
-        public NetworkStream ClientStream {  get; set; }
-        public MessageHandler MessageHandler { get; set; }
+        public string name { get; set; }
+        public TcpClient client { get; set; }
+        public NetworkStream clientStream {  get; set; }
+        public MessageHandler messageHandler { get; set; }
 
         public ClientData()
         {
-            this.Name = string.Empty;
-            this.Client = new TcpClient();
-            this.ClientStream = this.Client.GetStream();
-            this.MessageHandler = new MessageHandler(this);
+            this.name = string.Empty;
+            this.client = new TcpClient();
+            this.clientStream = this.client.GetStream();
+            this.messageHandler = new MessageHandler(this);
         }
 
         public ClientData(string name, TcpClient client, NetworkStream stream) 
         {
-            this.Name = name;
-            this.Client = client;
-            this.ClientStream = stream;
-            this.MessageHandler = new MessageHandler(this);
+            this.name = name;
+            this.client = client;
+            this.clientStream = stream;
+            this.messageHandler = new MessageHandler(this);
         }
 
         public ClientData(string name) 
         { 
-            this.Name = name;
-            this.Client = new TcpClient();
-            this.ClientStream = this.Client.GetStream();
-            this.MessageHandler = new MessageHandler(this);
+            this.name = name;
+            this.client = new TcpClient();
+            this.clientStream = this.client.GetStream();
+            this.messageHandler = new MessageHandler(this);
         }
 
         //CLIENT DISCONNECTION
@@ -39,12 +39,12 @@ namespace TCPChatroomServer
         {
             try
             {
-                this.MessageHandler.StopWaitUserMessage();
+                this.messageHandler.StopWaitUserMessage();
 
-                this.ClientStream?.Close();
-                this.Client?.Close();
+                this.clientStream?.Close();
+                this.client?.Close();
 
-                Console.WriteLine($"{Name} Disconnected");
+                Console.WriteLine($"{name} Disconnected");
             }
             catch (Exception ex)
             {
