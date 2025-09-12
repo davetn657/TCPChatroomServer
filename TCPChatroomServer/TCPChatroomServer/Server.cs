@@ -92,6 +92,7 @@ namespace TCPChatroomServer
                     {
                         //await users first message (it will be a predefined)
                         //if the name of the user is already in the array connectedClients, send a message back to client notifying them. then await next message
+                        await messageHandler.SendServerCommand(messageHandler.joinedServerMessage);
                         var nameTaken = false;
 
                         while (true)
@@ -101,7 +102,7 @@ namespace TCPChatroomServer
 
                             foreach(ClientData c in ConnectedClients)
                             {
-                                if (c.name == incomingData.from.name)
+                                if (c.name == incomingData.message)
                                 {
                                     nameTaken = true;
                                     break;
@@ -116,8 +117,9 @@ namespace TCPChatroomServer
                             }
                             else
                             {
-                                outgoingMessage.message = messageHandler.userConnectedMessage + $":{incomingData}";
-                                await messageHandler.SendMessageToAll(outgoingMessage, ConnectedClients);
+
+                                outgoingMessage.message = messageHandler.userConnectedMessage;
+                                await messageHandler.SendMessageToSpecific(outgoingMessage);
                                 break;
                             }
 
@@ -129,13 +131,14 @@ namespace TCPChatroomServer
                         //edit clientData using (ClientName, client, stream, numConnectedClients)
                         //add newclientdata to connectedClients
                         //increment numConnectedClients by one
-                        Console.WriteLine($"{incomingData.from.name} Connected");
-                        clientData.name = incomingData.from.name;
+                        outgoingMessage.message = messageHandler.userConnectedMessage + $": {incomingData.message}";
+                        Console.WriteLine(outgoingMessage.message);
+                        clientData.name = incomingData.message;
 
+                        ConnectedClients.Add(clientData);
                         outgoingMessage.message = AllUsers();
                         await messageHandler.SendMessageToSpecific(outgoingMessage);
 
-                        ConnectedClients.Add(clientData);
 
                         await messageHandler.WaitUserMessage(ConnectedClients);
                     }

@@ -20,9 +20,11 @@ namespace TCPChatroomServer
         private const string userMessage = "USERMESSAGE";
 
         public readonly string disconnectMessage = "DISCONNECTED";
-        public readonly string nameTakenMessage = "NAME TAKEN";
         public readonly string userConnectedMessage = "CONNECTED";
+        public readonly string nameTakenMessage = "NAME TAKEN";
+        public readonly string nameConfirmMessage = "NAME CONFIRMED";
         public readonly string serverCapacityMessage = "SERVER AT CAPACITY";
+        public readonly string joinedServerMessage = "JOINED SERVER";
         public readonly string messageFailedMessage = "MESSAGE FAILED TO SEND";
 
 
