@@ -16,14 +16,15 @@ namespace TCPChatroomServer
         private const int maxPortVal = 45000;
 
         //ACCEPTED CLIENT VARIABLES
-        public int MaxCapacity = 10;
-        public List<ClientData> ConnectedClients;
+        public int maxCapacity = 10;
+        public List<ClientData> connectedClients;
+        public string connectedClientsString;
 
         public Server(IPAddress host)
         {
             this.host = host;
             this.port = GeneratedPort();
-            this.ConnectedClients = new List<ClientData>();
+            this.connectedClients = new List<ClientData>();
         }
 
         private int GeneratedPort()
@@ -50,7 +51,7 @@ namespace TCPChatroomServer
             {
                 StopClientConnectionLoop();
 
-                foreach (var client in ConnectedClients) 
+                foreach (var client in connectedClients) 
                 {
                     client.DisconnectClient();
                 }
@@ -87,7 +88,7 @@ namespace TCPChatroomServer
                         continue;
                     }
 
-                    if (ConnectedClients.Count >= MaxCapacity)
+                    if (connectedClients.Count >= maxCapacity)
                     {
                         Console.WriteLine("USER TRIED TO CONNECT BUT SERVER IS FULL");
                         //if amount of clients connected exceeds capacity send a message back to client notifying that the chatroom is at max capacity then remove them from the stream
@@ -107,7 +108,7 @@ namespace TCPChatroomServer
                         {
                             incomingData = await messageHandler.ReceiveMessage();
 
-                            foreach(ClientData c in ConnectedClients)
+                            foreach(ClientData c in connectedClients)
                             {
                                 if (c.name == incomingData.message)
                                 {
@@ -140,7 +141,8 @@ namespace TCPChatroomServer
                         Console.WriteLine(outgoingMessage.message);
                         clientData.name = incomingData.message;
 
-                        ConnectedClients.Add(clientData);
+                        connectedClients.Add(clientData);
+                        AllUsers();
 
                         while (true)
                         {
@@ -149,7 +151,7 @@ namespace TCPChatroomServer
 
                             if (incomingData.message == ServerCommands.acceptAllConnectedMessage && messageHandler.CheckIfUserCommand(incomingData))
                             {
-                                outgoingMessage.message = AllUsers();
+                                outgoingMessage.message = connectedClientsString;
                                 await messageHandler.SendMessageToSpecific(outgoingMessage, clientData);
                                 break;
                             }
@@ -159,7 +161,7 @@ namespace TCPChatroomServer
                             }
                         }
 
-                        await messageHandler.WaitUserMessage(ConnectedClients);
+                        await messageHandler.WaitUserMessage(connectedClients);
                     }
                 }
                 catch (Exception e)
@@ -172,28 +174,26 @@ namespace TCPChatroomServer
 
         public void Disconnect(string userName)
         {
-            ClientData user = ConnectedClients.Find(e => e.name == userName);
+            ClientData user = connectedClients.Find(e => e.name == userName);
 
             if (user != null)
             {
                 user.DisconnectClient();
-                ConnectedClients.Remove(user);
+                connectedClients.Remove(user);
             }
             else
             {
                 Debug.WriteLine($"Could not find user {userName}");
             }
         }
-        private string AllUsers()
+        private void AllUsers()
         {
-            string connectedClientsString = string.Empty;
-
-            for (int i = 0; i < ConnectedClients.Count; i++)
+            for (int i = 0; i < connectedClients.Count; i++)
             {
-                connectedClientsString += ConnectedClients[i].name + ",";
+                connectedClientsString += connectedClients[i].name + ",";
             }
 
-            return connectedClientsString.TrimEnd(',');
+            connectedClientsString.TrimEnd(',');
         }
 
         private void StopClientConnectionLoop()
