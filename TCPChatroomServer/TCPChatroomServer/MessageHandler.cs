@@ -102,6 +102,15 @@ namespace TCPChatroomServer
             }
         }
 
+        public bool CheckIfUserCommand(MessageData messageData)
+        {
+            if (messageData.messageType == ServerCommands.userCommand)
+            {
+                return true;
+            }
+            return false;
+        }
+
         public void StopWaitUserMessage()
         {
             cancelTokenSource.Cancel();

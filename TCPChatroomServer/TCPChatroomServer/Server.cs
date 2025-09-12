@@ -82,7 +82,7 @@ namespace TCPChatroomServer
 
                     incomingData = await messageHandler.ReceiveMessage();
 
-                    if (incomingData != null && incomingData.message != ServerCommands.userConnectedMessage) 
+                    if (incomingData != null && messageHandler.CheckIfUserCommand(incomingData) && incomingData.message != ServerCommands.userConnectedMessage) 
                     {
                         continue;
                     }
@@ -106,7 +106,6 @@ namespace TCPChatroomServer
                         while (true)
                         {
                             incomingData = await messageHandler.ReceiveMessage();
-
 
                             foreach(ClientData c in ConnectedClients)
                             {
@@ -142,9 +141,23 @@ namespace TCPChatroomServer
                         clientData.name = incomingData.message;
 
                         ConnectedClients.Add(clientData);
-                        outgoingMessage.message = AllUsers();
-                        await messageHandler.SendMessageToSpecific(outgoingMessage, clientData);
 
+                        while (true)
+                        {
+                            await messageHandler.SendServerCommand(ServerCommands.sendingAllConnectedMessage);
+                            incomingData = await messageHandler.ReceiveMessage();
+
+                            if (incomingData.message == ServerCommands.acceptAllConnectedMessage && messageHandler.CheckIfUserCommand(incomingData))
+                            {
+                                outgoingMessage.message = AllUsers();
+                                await messageHandler.SendMessageToSpecific(outgoingMessage, clientData);
+                                break;
+                            }
+                            else
+                            {
+                                Console.WriteLine("Trying to send all users again");
+                            }
+                        }
 
                         await messageHandler.WaitUserMessage(ConnectedClients);
                     }
