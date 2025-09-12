@@ -14,7 +14,6 @@ namespace TCPChatroomServer
         private CancellationTokenSource cancelTokenSource;
         private CancellationToken cancelToken;
 
-
         public MessageHandler(ClientData userData)
         {
             this.userData = userData;
@@ -94,7 +93,7 @@ namespace TCPChatroomServer
 
         public async Task SendServerCommand(string message)
         {
-            MessageData serverCommand = new MessageData(ServerCommands.serverMessage, new ClientData("server"), message);
+            MessageData serverCommand = new MessageData(ServerCommands.serverMessage, "server", message);
             await SendMessageToSpecific(serverCommand, userData);
 
             if (message == ServerCommands.disconnectMessage || message == ServerCommands.serverCapacityMessage)

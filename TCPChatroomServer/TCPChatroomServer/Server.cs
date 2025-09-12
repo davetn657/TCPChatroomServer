@@ -125,9 +125,7 @@ namespace TCPChatroomServer
                             }
                             else
                             {
-
-                                outgoingMessage.message = ServerCommands.userConnectedMessage;
-                                await messageHandler.SendServerCommand(outgoingMessage.message);
+                                await messageHandler.SendServerCommand(ServerCommands.nameConfirmMessage);
                                 break;
                             }
 
