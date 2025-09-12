@@ -80,19 +80,27 @@ namespace TCPChatroomServer
                     MessageHandler messageHandler = clientData.messageHandler;
                     MessageData outgoingMessage = new MessageData();
 
+                    incomingData = await messageHandler.ReceiveMessage();
+
+                    if (incomingData != null && incomingData.message != ServerCommands.userConnectedMessage) 
+                    {
+                        continue;
+                    }
+
                     if (ConnectedClients.Count >= MaxCapacity)
                     {
+                        Console.WriteLine("USER TRIED TO CONNECT BUT SERVER IS FULL");
                         //if amount of clients connected exceeds capacity send a message back to client notifying that the chatroom is at max capacity then remove them from the stream
-                        await messageHandler.SendServerCommand(messageHandler.serverCapacityMessage);
+                        await messageHandler.SendServerCommand(ServerCommands.serverCapacityMessage);
 
-                        stream.Close();
-                        client.Close();
+                        clientData.DisconnectClient();
                     }
                     else
                     {
                         //await users first message (it will be a predefined)
                         //if the name of the user is already in the array connectedClients, send a message back to client notifying them. then await next message
-                        await messageHandler.SendServerCommand(messageHandler.joinedServerMessage);
+                        Console.WriteLine("USER CONNECTED");
+                        await messageHandler.SendServerCommand(ServerCommands.joinedServerMessage);
                         var nameTaken = false;
 
                         while (true)
@@ -112,14 +120,14 @@ namespace TCPChatroomServer
                             if (nameTaken)
                             {
                                 //wait for the users to input a different username
-                                await messageHandler.SendServerCommand(messageHandler.nameTakenMessage);
+                                await messageHandler.SendServerCommand(ServerCommands.nameTakenMessage);
                                 continue;
                             }
                             else
                             {
 
-                                outgoingMessage.message = messageHandler.userConnectedMessage;
-                                await messageHandler.SendMessageToSpecific(outgoingMessage);
+                                outgoingMessage.message = ServerCommands.userConnectedMessage;
+                                await messageHandler.SendServerCommand(outgoingMessage.message);
                                 break;
                             }
 
@@ -131,13 +139,13 @@ namespace TCPChatroomServer
                         //edit clientData using (ClientName, client, stream, numConnectedClients)
                         //add newclientdata to connectedClients
                         //increment numConnectedClients by one
-                        outgoingMessage.message = messageHandler.userConnectedMessage + $": {incomingData.message}";
+                        outgoingMessage.message = ServerCommands.userConnectedMessage + $": {incomingData.message}";
                         Console.WriteLine(outgoingMessage.message);
                         clientData.name = incomingData.message;
 
                         ConnectedClients.Add(clientData);
                         outgoingMessage.message = AllUsers();
-                        await messageHandler.SendMessageToSpecific(outgoingMessage);
+                        await messageHandler.SendMessageToSpecific(outgoingMessage, clientData);
 
 
                         await messageHandler.WaitUserMessage(ConnectedClients);
@@ -146,6 +154,7 @@ namespace TCPChatroomServer
                 catch (Exception e)
                 {
                     Debug.WriteLine($"Error:{e.Message} \nCould not connect to user");
+                    continue;
                 }
             }
         }

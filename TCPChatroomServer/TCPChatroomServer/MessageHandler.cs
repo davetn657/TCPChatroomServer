@@ -10,28 +10,14 @@ namespace TCPChatroomServer
 {
     internal class MessageHandler
     {
-        private ClientData serverData;
         private ClientData userData;
         private CancellationTokenSource cancelTokenSource;
         private CancellationToken cancelToken;
-
-        //Message Identification
-        private const string serverMessage = "SERVERMESSAGE";
-        private const string userMessage = "USERMESSAGE";
-
-        public readonly string disconnectMessage = "DISCONNECTED";
-        public readonly string userConnectedMessage = "CONNECTED";
-        public readonly string nameTakenMessage = "NAME TAKEN";
-        public readonly string nameConfirmMessage = "NAME CONFIRMED";
-        public readonly string serverCapacityMessage = "SERVER AT CAPACITY";
-        public readonly string joinedServerMessage = "JOINED SERVER";
-        public readonly string messageFailedMessage = "MESSAGE FAILED TO SEND";
 
 
         public MessageHandler(ClientData userData)
         {
             this.userData = userData;
-            this.serverData = new ClientData("Server");
             cancelTokenSource = new CancellationTokenSource();
             cancelToken = cancelTokenSource.Token;
         }
@@ -45,7 +31,7 @@ namespace TCPChatroomServer
                 {
                     MessageData receivedMessage = await ReceiveMessage();
 
-                    if (receivedMessage.messageType == userMessage)
+                    if (receivedMessage.messageType == ServerCommands.userMessage)
                     {
                         await SendMessageToAll(receivedMessage, connectedClients);
                     }
@@ -81,12 +67,14 @@ namespace TCPChatroomServer
             }
         }
 
-        public async Task SendMessageToSpecific(MessageData message)
+        public async Task SendMessageToSpecific(MessageData message, ClientData client)
         {
             MessageData data = message;
             byte[] messageToSend = data.Serialize();
 
-            await userData.clientStream.WriteAsync(messageToSend, 0, messageToSend.Length);
+            await client.clientStream.WriteAsync(messageToSend, 0, messageToSend.Length);
+
+            Console.WriteLine($"SENT:{message.message}");
         }
 
         public async Task SendMessageToAll(MessageData message, List<ClientData> connectedClients)
@@ -95,7 +83,7 @@ namespace TCPChatroomServer
             {
                 foreach (ClientData client in connectedClients)
                 {
-                    await SendMessageToSpecific(message);
+                    await SendMessageToSpecific(message, client);
                 }
             }
             catch (InvalidOperationException ex) 
@@ -106,10 +94,10 @@ namespace TCPChatroomServer
 
         public async Task SendServerCommand(string message)
         {
-            MessageData serverCommand = new MessageData(serverMessage, serverData, message);
-            await SendMessageToSpecific(serverCommand);
+            MessageData serverCommand = new MessageData(ServerCommands.serverMessage, new ClientData("server"), message);
+            await SendMessageToSpecific(serverCommand, userData);
 
-            if (message == disconnectMessage || message == serverCapacityMessage)
+            if (message == ServerCommands.disconnectMessage || message == ServerCommands.serverCapacityMessage)
             {
                 userData.DisconnectClient();
             }
