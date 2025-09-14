@@ -30,13 +30,13 @@ namespace TCPChatroomServer
                 {
                     MessageData receivedMessage = await ReceiveMessage();
 
-                    if (receivedMessage.messageType == ServerCommands.userMessage)
+                    if (ServerCommands.commandMessages.Contains(receivedMessage.messageType))
                     {
-                        await SendMessageToAll(receivedMessage, connectedClients);
+                        await SendServerCommand(receivedMessage.messageType, ServerCommands.serverCommand);
                     }
                     else
                     {
-                        await SendServerCommand(receivedMessage.message);
+                        await SendMessageToAll(receivedMessage, connectedClients);
                     }
                 }
                 catch (Exception ex)
@@ -73,7 +73,7 @@ namespace TCPChatroomServer
 
             await client.clientStream.WriteAsync(messageToSend, 0, messageToSend.Length);
 
-            Console.WriteLine($"SENT:{message.message}");
+            Console.WriteLine($"SENT MESSAGE:{message.message} MESSAGE TYPE:{message.messageType}");
         }
 
         public async Task SendMessageToAll(MessageData message, List<ClientData> connectedClients)
@@ -91,24 +91,15 @@ namespace TCPChatroomServer
             }
         }
 
-        public async Task SendServerCommand(string message)
+        public async Task SendServerCommand(string messageType, string message)
         {
-            MessageData serverCommand = new MessageData(ServerCommands.serverMessage, "server", message);
+            MessageData serverCommand = new MessageData(messageType, "server", message);
             await SendMessageToSpecific(serverCommand, userData);
 
             if (message == ServerCommands.disconnectMessage || message == ServerCommands.serverCapacityMessage)
             {
                 userData.DisconnectClient();
             }
-        }
-
-        public bool CheckIfUserCommand(MessageData messageData)
-        {
-            if (messageData.messageType == ServerCommands.userCommand)
-            {
-                return true;
-            }
-            return false;
         }
 
         public void StopWaitUserMessage()

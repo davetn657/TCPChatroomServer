@@ -79,20 +79,14 @@ namespace TCPChatroomServer
 
                     ClientData clientData = new ClientData("Temp", client, stream);
                     MessageHandler messageHandler = clientData.messageHandler;
-                    MessageData outgoingMessage = new MessageData();
 
                     incomingData = await messageHandler.ReceiveMessage();
-
-                    if (incomingData != null && messageHandler.CheckIfUserCommand(incomingData) && incomingData.message != ServerCommands.userConnectedMessage) 
-                    {
-                        continue;
-                    }
 
                     if (connectedClients.Count >= maxCapacity)
                     {
                         Console.WriteLine("USER TRIED TO CONNECT BUT SERVER IS FULL");
                         //if amount of clients connected exceeds capacity send a message back to client notifying that the chatroom is at max capacity then remove them from the stream
-                        await messageHandler.SendServerCommand(ServerCommands.serverCapacityMessage);
+                        await messageHandler.SendServerCommand(ServerCommands.serverCapacityMessage, ServerCommands.serverCommand);
 
                         clientData.DisconnectClient();
                     }
@@ -101,7 +95,7 @@ namespace TCPChatroomServer
                         //await users first message (it will be a predefined)
                         //if the name of the user is already in the array connectedClients, send a message back to client notifying them. then await next message
                         Console.WriteLine("USER CONNECTED");
-                        await messageHandler.SendServerCommand(ServerCommands.joinedServerMessage);
+                        await messageHandler.SendServerCommand(ServerCommands.joinedServerMessage, ServerCommands.serverCommand);
                         var nameTaken = false;
 
                         while (true)
@@ -120,12 +114,12 @@ namespace TCPChatroomServer
                             if (nameTaken)
                             {
                                 //wait for the users to input a different username
-                                await messageHandler.SendServerCommand(ServerCommands.nameTakenMessage);
+                                await messageHandler.SendServerCommand(ServerCommands.nameTakenMessage, ServerCommands.serverCommand);
                                 continue;
                             }
                             else
                             {
-                                await messageHandler.SendServerCommand(ServerCommands.nameConfirmMessage);
+                                await messageHandler.SendServerCommand(ServerCommands.nameConfirmMessage, ServerCommands.serverCommand);
                                 break;
                             }
 
@@ -137,22 +131,19 @@ namespace TCPChatroomServer
                         //edit clientData using (ClientName, client, stream, numConnectedClients)
                         //add newclientdata to connectedClients
                         //increment numConnectedClients by one
-                        outgoingMessage.message = ServerCommands.userConnectedMessage + $": {incomingData.message}";
-                        Console.WriteLine(outgoingMessage.message);
+                        Console.WriteLine(ServerCommands.userConnectedMessage + $": {incomingData.message}");
                         clientData.name = incomingData.message;
-
+                        
                         connectedClients.Add(clientData);
                         AllUsers();
 
                         while (true)
                         {
-                            await messageHandler.SendServerCommand(ServerCommands.sendingAllConnectedMessage);
+                            await messageHandler.SendServerCommand(ServerCommands.sendingAllConnectedMessage, connectedClientsString);
                             incomingData = await messageHandler.ReceiveMessage();
 
-                            if (incomingData.message == ServerCommands.acceptAllConnectedMessage && messageHandler.CheckIfUserCommand(incomingData))
+                            if (incomingData.messageType == ServerCommands.acceptAllConnectedMessage)
                             {
-                                outgoingMessage.message = connectedClientsString;
-                                await messageHandler.SendMessageToSpecific(outgoingMessage, clientData);
                                 break;
                             }
                             else
@@ -186,11 +177,15 @@ namespace TCPChatroomServer
                 Debug.WriteLine($"Could not find user {userName}");
             }
         }
+
         private void AllUsers()
         {
-            for (int i = 0; i < connectedClients.Count; i++)
+            foreach (ClientData user in connectedClients)
             {
-                connectedClientsString += connectedClients[i].name + ",";
+                if (user != null)
+                {
+                    connectedClientsString += user.name + ",";
+                }
             }
 
             connectedClientsString.TrimEnd(',');

@@ -8,11 +8,9 @@ namespace TCPChatroomServer
 {
     internal class ServerCommands
     {
-        //Message Identification
-        public const string serverMessage = "SERVERMESSAGE";
-        public const string userMessage = "USERMESSAGE";
-        public const string userCommand = "USERCOMMAND";
+        public const string serverCommand = "SERVER COMMAND";
 
+        //Message Identification
         public const string disconnectMessage = "DISCONNECTED";
         public const string userConnectedMessage = "CONNECTED";
         public const string nameTakenMessage = "NAME TAKEN";
@@ -22,6 +20,20 @@ namespace TCPChatroomServer
         public const string messageFailedMessage = "MESSAGE FAILED TO SEND";
         public const string sendingAllConnectedMessage = "SENDING CONNECTED USERS";
         public const string acceptAllConnectedMessage = "ACCEPTED CONNECTED USERS";
+        public const string userMessage = "UserMessage";
+
+        public static List<string> commandMessages = new List<string>
+        {
+            disconnectMessage,
+            userConnectedMessage,
+            nameTakenMessage,
+            nameConfirmMessage,
+            serverCapacityMessage,
+            joinedServerMessage,
+            messageFailedMessage,
+            sendingAllConnectedMessage,
+            acceptAllConnectedMessage
+        };
 
     }
 }
